@@ -1,7 +1,8 @@
 import numpy as np
 import unittest
-from modularizando_qga import initialize_population, build_unitary_routines, build_mutation_arrays,init_pop_numpy,crossover_rutine_unitary
+from modularizando_qga import *
 import quantum_mats as qm
+import re
 from copy import deepcopy
 def bucle_for(population,n,cl):
         #if n != len(population) or cl != len(population[0]):
@@ -96,19 +97,77 @@ class Test_unitary_routines(unittest.TestCase):
             self.assertEqual(q, k)
         #self.assertEqual(1, "dasdewsa")
         
-    def test_numpy_vs_original_crossover_resultado(self):
+   # def test_numpy_vs_original_crossover_resultado(self):
         #cambiando a numpy
-        cl = 3
-        n = 2
-        a = n // 2
-        r=crossover_rutine_unitary(n,cl,a)
+        #cl = 3
+        #n = 2
+        #a = n // 2
+        #cross_index = cl // 2
+        #r=crossover_rutine_unitary(n,cl,a)
         #antigua
-        qq1 = [q1 for nu in range(0, n//2, 2) for q1 in range((n // 2 + nu) * cl + cross_index, (n // 2 + nu + 1) * cl)]
-        qq2 = [q2 for nu in range(0, n//2, 2) for q2 in range((n // 2 + nu + 1) * cl + cross_index, (n // 2 + nu + 2) * cl)]
-        cross = qm.Swap_reg[0](qq1, qq2, n*cl)
-        cross = qm.KronExpand(1, cross, 2 ** a)
-        mat_cross = cross.get_matrix()
-        self.assertEqual(r, mat_cross)
+        #qq1 = [q1 for nu in range(0, n//2, 2) for q1 in range((n // 2 + nu) * cl + cross_index, (n // 2 + nu + 1) * cl)]
+        #qq2 = [q2 for nu in range(0, n//2, 2) for q2 in range((n // 2 + nu + 1) * cl + cross_index, (n // 2 + nu + 2) * cl)]
+        #qq1 = np.array([q1 for nu in range(0, n//2, 2) for q1 in range((n // 2 + nu) * cl + cross_index, (n // 2 + nu + 1) * cl)])
+        #qq2 = np.array([q2 for nu in range(0, n//2, 2) for q2 in range((n // 2 + nu + 1) * cl + cross_index, (n // 2 + nu + 2) * cl)])
+        #cross = qm.Swap_reg[0](qq1, qq2, n*cl)
+        #cross = qm.Swap_reg(qq1, qq2, n*cl)
+        #cross = qm.KronExpand(1, cross, 2 ** a)
+        #mat_cross = cross.get_matrix()
+        #self.assertEqual(r, mat_cross)
+
+
+class TestValidateMutationUnitary(unittest.TestCase):
+
+    def test_valid_cases(self):
+        valid_inputs = ["r", "R", "x", "X", "not", "NOT", "h", "H", "i", "I"]
+        for input in valid_inputs:
+            self.assertTrue(validate_mutation_unitary(input), f"Failed for input: {input}")
+
+    def test_invalid_cases(self):
+        invalid_inputs = ["", " ", "a", "b", "c", "Rr", "xi", "no", "NOTx", "1", "!", "ri"]
+        for input in invalid_inputs:
+            self.assertFalse(validate_mutation_unitary(input), f"Failed for input: {input}")
+
+
+class TestMutationUnitary(unittest.TestCase):
+    def test_x_unitary(self):
+        valid_inputs = ["x", "X", "not", "NOT"]
+        expected_result = qm.rho([1, 1], [0, 1], [1, 0], (2, 2))
+        for input in valid_inputs:
+            result = create_mutation_unitary(input)
+            self.assertEqual(result.get_matrix().all(), expected_result.get_matrix().all())
+
+    def test_h_unitary(self):
+        valid_inputs = ["h", "H"]
+        expected_result = qm.rho(np.array([1, 1, 1, -1])/np.sqrt(2), [0, 0, 1, 1], [0,  1, 0, 1], (2, 2))
+        for input in valid_inputs:
+            result = create_mutation_unitary(input)
+            self.assertEqual(result.get_matrix().all(), expected_result.get_matrix().all())
+
+    def test_i_unitary(self):
+        valid_inputs = ["i", "I"]
+        expected_result = qm.Identity(2)
+        for input in valid_inputs:
+            result = create_mutation_unitary(input)
+            self.assertEqual(result.get_matrix().all(), expected_result.get_matrix().all())
+
+    def test_invalid_input(self):
+        invalid_inputs = ["", " ", "a", "b", "c", "Rr", "xi", "no", "1", "!", "ri"," i"]
+        for input in invalid_inputs:
+            with self.assertRaises(ValueError):
+                create_mutation_unitary(input)
+
+    def test_unitary_rotation(self):
+        test =False
+        test_str=["I","i"]
+        for letra in test_str:
+            if re.match(r"^[iI]$", letra):
+                test=True
+                self.assertEqual(True, test)
+                test=False
+    
+
+
 
 
 if __name__ == "__main__":

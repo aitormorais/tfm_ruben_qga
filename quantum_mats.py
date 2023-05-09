@@ -163,8 +163,9 @@ class rho(QuantumMatrix):
             se almacenan su forma (self.shape),
             sus datos (self.store),
             el número de elementos no nulos (self.nonzeros) y el número de qubits (self.nq)."""
-            if abs(np.trace(data) - 1) > QuantumMatrix.error_tol:
+            if (abs(np.trace(data) - 1) > QuantumMatrix.error_tol).all():
                 raise ValueError("rho not normalized, tr: ", abs(np.trace(data) - 1))
+            data = np.array(data)
             if np.any(abs(np.transpose(data.conjugate()) - data) > QuantumMatrix.error_tol):#verifica si algún elemento de la diferencia calculada en el paso 3 es mayor que un cierto umbral de tolerancia de erro
                 #data.conjugate() ->  calcula la conjugada  de data
                 # abs(np.transpose(data.conjugate()) - data) ->calcula el valor absoluto de la diferencia entre la matriz transpuesta conjugada y la matriz original data.
@@ -1066,19 +1067,23 @@ class Swap_reg(QuantumMatrix):
         ibin = self.__binenc(i0)
         jbin = [b for b in ibin]
         jbin = np.array(jbin)
-        print(type(jbin))
-        print(jbin)
-        print("QQ1",self.qq1)
-        print("QQ1",self.qq2)
-        print(type(self.qq1))
+        #print(type(jbin))
+        #print(jbin)
+        #print("QQ1",self.qq1)
+        #print("QQ1",self.qq2)
+        #print(type(self.qq1))
         for q1, q2 in zip(self.qq1, self.qq2):
+            #index = np.where(qq1=q1)
             temp = jbin[q1]
-            print("q1:", q1)
-            print("q2:", q2)
-            print(type(self.qq1))
+            #temp = jbin[index]
+            #print("q1:", q1)
+            #print("q2:", q2)
+            #print(type(self.qq1))
             jbin[q1] = jbin[q2]
             jbin[q2] = temp
         yield self.__bindec(''.join(jbin)), 1
+
+
 
     def dot(self, M):
         QuantumMatrix.dot(self, M)
@@ -1570,7 +1575,7 @@ class Oracle(QuantumMatrix):
             return Dot(self, M)
 
     @staticmethod
-    def get_qf_sort_oracle(nq=5, reg1=[0, 1], reg2=[2, 3], ancilla=4, uu=None, criteria=None):
+    def get_qf_sort_oracle(nq=5, reg1=np.array([0, 1]), reg2=np.array([2, 3]), ancilla=4, uu=None, criteria=None):
         """
         Static method to construct a sort oracle for a register pair considering a quantum fitness.
         Assumes registers are consecutive.
@@ -1578,9 +1583,9 @@ class Oracle(QuantumMatrix):
         ----------
         nq: int
             Total number of registers
-        reg1: list of ints
+        reg1: np.ndarray
             Representation of the first register. (upper level)
-        reg1: list of ints
+        reg2: np.ndarray
             Representation of the second register. (lower level)
         ancilla: int
             Position of the ancilla used.
@@ -1598,11 +1603,19 @@ class Oracle(QuantumMatrix):
         oracle: np.ndarray
             Matrix representing the oracle in the canonical basis
         """
-        if not all(i in reg1 + reg2 for i in range(reg1[0], reg2[-1] + 1)):
+        if not all(i in np.concatenate((reg1, reg2)) for i in range(reg1[0], reg2[-1] + 1)):
             raise Exception("Only consecutive registers allowed for comparative.")
 
         if uu is None:
             uu = np.identity(2**(len(reg1)))
+
+        if not isinstance(reg1, np.ndarray):
+            reg1 = np.array(reg1)
+        if not isinstance(reg2, np.ndarray):
+            reg2 = np.array(reg2)
+
+        if reg1.dtype != reg2.dtype:
+            raise Exception("reg1 and reg2 must have the same data type.")
 
         uu = np.kron(np.kron(np.identity(2 ** reg1[0]), np.kron(uu, uu)),
                      np.identity(2 ** (nq - reg2[-1] - 1)))

@@ -12,6 +12,7 @@ import numpy as np
 import quantum_mats as qm
 from copy import deepcopy
 from time import time
+import time
 
 np.set_printoptions(threshold=np.inf)
 
@@ -200,7 +201,6 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                                                 ancilla=ancilla,
                                                 uu=fitness_basis,
                                                 criteria=fitness_criteria)
-
             cs = qm.CSwap_reg(ancilla,
                               reg1,
                               reg2,
@@ -211,6 +211,7 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
     mat_sort1 = sort1
 
     # Build mutation arrays
+    
     if type(mutation_unitary) == list or type(pm) == list:
         if type(mutation_unitary) != list or type(pm) != list:
             raise ValueError("mutation_unitary and pm are not consistent.")
@@ -226,8 +227,8 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
     else:
         pm_sum = pm
         use_mutation_unitary_set = False
-
-    if not use_mutation_unitary_set:
+    if use_mutation_unitary_set==False:
+        print("dentro : ",mutation_unitary)
         if mutation_unitary not in ["r", "R"]:
             if type(mutation_unitary) == str:
                 if mutation_unitary in ["x", "X", "not", "NOT"]:
@@ -468,7 +469,7 @@ def qga_qf_test(fitness_states, samples, dirpath):
 
     for trial in range(samples):
         print("trial ", trial, end=' ')
-        t1 = time()
+        #t1 = time()
 
         rho_population = qm.rho.gen_random_rho(n * cl)
 
@@ -478,7 +479,7 @@ def qga_qf_test(fitness_states, samples, dirpath):
                                                   projection_method="ptrace", pre_projection_unitary=ppu,
                                                   store_path=None,
                                                   track_fidelity=tf)
-        print(time() - t1)
+        #print(time() - t1)
 
         with open(dirpath+'/fidelity_tracks_{:03d}'.format(trial), 'w') as file:
             file.write("Tracking fidelities for:\n")
@@ -492,8 +493,11 @@ def qga_qf_test(fitness_states, samples, dirpath):
 
 if __name__ == '__main__':
     from scipy.stats import special_ortho_group
-    state_case_number = 600
-    samples = 50
+    start_time = time.time()
+    #state_case_number = 600
+    state_case_number = 2
+    #samples = 50
+    samples = 2
     run_num = 9
     dirpath = 'QGA_QF_run_{:02d}/QGA_BCQO_test_'.format(run_num)
 
@@ -515,3 +519,6 @@ if __name__ == '__main__':
             tf = [ortho_group[:, i] for i in range(4)]
 
         qga_qf_test(fitness_states=tf, samples=samples, dirpath=dirpath+("%03d" % (state_case + 1)))
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Tiempo de ejecución: {:.5f} segundos".format(execution_time))
