@@ -25,15 +25,18 @@ np.set_printoptions(threshold=np.inf)
 #            BCQO
 #
 # -----------------------------
-
+def eliminar_contenido(archivo):
+    if os.path.exists(archivo):
+        print(f"El archivo {archivo} existe. Eliminando su contenido.")
+        open(archivo, "w").close()
+    else:
+        print(f"El archivo {archivo} no existe.")
 
 def anotar_tiempos(inicio,fin,nombre_archivo,nombre_funcion):
     ejecucion = fin - inicio
     archivo = open(nombre_archivo,"a")
-    archivo.write("Tiempo de ejecucion de "+nombre_funcion+": "+str(ejecucion)+" \n ")
+    archivo.write(nombre_funcion+": "+str(ejecucion)+" \n ")
     archivo.close()
-
-
 
 def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                               init_population=None, n=None, cl=None,
@@ -523,8 +526,10 @@ def qga_qf_test(fitness_states, samples, dirpath):
 
 
 if __name__ == '__main__':
+    
     from scipy.stats import special_ortho_group
-    start_time = time.time()
+    eliminar_contenido("original.txt")
+    comenzar = time.time()
     #state_case_number = 600
     state_case_number = 2
     #samples = 50
@@ -549,6 +554,6 @@ if __name__ == '__main__':
             ortho_group = special_ortho_group.rvs(4)
             tf = [ortho_group[:, i] for i in range(4)]
         qga_qf_test(fitness_states=tf, samples=samples, dirpath=dirpath+("%03d" % (state_case + 1)))
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print("Tiempo de ejecución: {:.5f} segundos".format(execution_time))
+    terminar = time.time()
+    anotar_tiempos(comenzar,terminar,"original.txt","Ejecutame")
+    
