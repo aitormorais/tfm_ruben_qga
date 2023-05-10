@@ -1,0 +1,49 @@
+Tiempo de ejecucion de iniciar_pop: 0.2592911720275879 
+ Tiempo de ejecucion de unitary routines: 0.5725369453430176 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 33.47655367851257 
+ Tiempo de ejecucion de qga: 34.33230233192444 
+ Tiempo de ejecucion de iniciar_pop: 0.2643117904663086 
+ Tiempo de ejecucion de unitary routines: 0.590421199798584 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 33.37757086753845 
+ Tiempo de ejecucion de qga: 34.259318828582764 
+ Tiempo de ejecucion de iniciar_pop: 0.2783362865447998 
+ Tiempo de ejecucion de unitary routines: 0.5704729557037354 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 36.174522399902344 
+ Tiempo de ejecucion de qga: 37.05149984359741 
+ Tiempo de ejecucion de iniciar_pop: 0.26351451873779297 
+ Tiempo de ejecucion de unitary routines: 0.6003963947296143 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 32.243486642837524 
+ Tiempo de ejecucion de qga: 33.13431906700134 
+ Tiempo de ejecucion de iniciar_pop: 0.29624009132385254 
+ Tiempo de ejecucion de unitary routines: 0.6911516189575195 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 95.33935713768005 
+ Tiempo de ejecucion de qga: 96.35499262809753 
+ Tiempo de ejecucion de iniciar_pop: 0.2626993656158447 
+ Tiempo de ejecucion de unitary routines: 0.558509111404419 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 97.24690842628479 
+ Tiempo de ejecucion de qga: 98.09695076942444 
+ Tiempo de ejecucion de iniciar_pop: 0.2592802047729492 
+ Tiempo de ejecucion de unitary routines: 0.5714700222015381 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 96.32321453094482 
+ Tiempo de ejecucion de qga: 97.1829001903534 
+ Tiempo de ejecucion de iniciar_pop: 0.3530569076538086 
+ Tiempo de ejecucion de unitary routines: 0.6801819801330566 
+ Tiempo de ejecucion de build_mutation_arrays: 0.0 
+ Tiempo de ejecucion de preprojection_rotation: 0.0 
+ Tiempo de ejecucion de el for: 97.87965488433838 
+ Tiempo de ejecucion de qga: 98.94674324989319 
+ 

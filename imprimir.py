@@ -3,6 +3,7 @@ import unittest
 from modularizando_qga import initialize_population, build_unitary_routines, build_mutation_arrays,init_pop_numpy
 import quantum_mats as qm
 from copy import deepcopy
+import time
 def visualizar_matrix():
         n = 2
         cl = 3
@@ -41,4 +42,12 @@ def verq():
     print(type(qk1))
 if __name__ == "__main__":
     #visualizar_matrix()
+    inicio = time.time()
     verq()
+    fin = time.time()
+    ejecucion = fin - inicio
+    print(ejecucion)
+    archivo = open("datos.txt","a")
+    archivo.write("Tiempo de ejecucion: "+str(ejecucion)+" \n ")
+    archivo.close()
+    

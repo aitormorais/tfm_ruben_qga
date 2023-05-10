@@ -5,6 +5,7 @@ from copy import deepcopy
 import time
 import re
 
+
 def initialize_population(init_population, n, cl, track_fidelity, store_path,generation_number):
     # Código que maneja la inicialización de la población y los errores relacionados
     if init_population is None:
@@ -361,8 +362,20 @@ def apply_stage_transform(rho_pop, n, stage, sort0, sort1, mat_sort0, mat_sort1,
 #for stage in range(0, n):
 #    rho_pop = apply_stage_transform(rho_pop, n, stage, sort0, sort1, mat_sort0, mat_sort1, ancillas, projection_method, pre_projection_unitary, a)
 
+
+
+def anotar_tiempos(inicio,fin,nombre_archivo,nombre_funcion):
+    ejecucion = fin - inicio
+    archivo = open(nombre_archivo,"a")
+    archivo.write("Tiempo de ejecucion de "+nombre_funcion+": "+str(ejecucion)+" \n ")
+    archivo.close()
+
 def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_population=None, n=None, cl=None,generation_number=100, pm=0.01, mutation_pattern=None, mutation_unitary="x",projection_method="r", pre_projection_unitary="I",store_path=None, track_fidelity=None, track_only_reg_states=True):
+    inicio= time.time()
     rho_pop,ancillas,a =init_pop_numpy(init_population, n, cl, generation_number)
+    fin = time.time()
+    #1
+    anotar_tiempos(inicio, fin, "modulos.txt", "init_pop")
     if track_fidelity:
         fidelity_array = np.zeros(shape=(generation_number, 5, n, len(track_fidelity)))
     if store_path:
@@ -380,8 +393,15 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_populati
         else:
             print("None", file=store)
         print(file=store)
+    inicio = time.time()
     mat_clone, mat_cross, sort0, sort1=build_unitary_routines(n, cl, fitness_basis, fitness_criteria,a)
+    fin = time.time()
+    anotar_tiempos(inicio, fin,  "modulos.txt", "build_unitary_routines")
+    inicio = time.time()
     use_mutation_unitary_set, pm_sum, pm_norm, mut_arr, mat_mut_arr = build_mutation_arrays(mutation_unitary, pm, n, cl, mutation_pattern)
+    fin = time.time()
+    anotar_tiempos(inicio, fin, "modulos.txt", "build_mutation_arrays")
+    inicio = time.time()
     if isinstance(pre_projection_unitary, str):
         if re.match(r"^[iI]$", pre_projection_unitary):
             pre_projection_unitary = "I"
@@ -389,6 +409,9 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_populati
             raise ValueError(f'pre_projection_unitary = "{pre_projection_unitary}" not supported.')
     else:
         lower_rot_mat = build_pre_projection_rotation(pre_projection_unitary, n, cl,a)
+
+    fin = time.time()
+    anotar_tiempos(inicio, fin, "modulos.txt", "preprojection_rotation")
     for generation in range(generation_number):
         if track_fidelity:
             for reg in range(n):
@@ -410,8 +433,16 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_populati
                     print('register {:2d}'.format(reg), end=' '*4, file=store)
                     print(repr(rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl))).get_matrix()), file=store)
                     print('\n', file=store)
+        
+        inicio = time.time()
         for stage in range(0, n):
+            hasiera = time.time()
             rho_pop = apply_stage_transform(rho_pop, n, stage, sort0, sort1, sort0, sort1, ancillas, projection_method, pre_projection_unitary, a,cl)
+            amaiera = time.time()
+            anotar_tiempos(hasiera, amaiera, "modulos.txt", "apply_stage_transform_for_stage")
+        
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "modulos.txt", "preprojection_rotation_for_generation")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -427,7 +458,10 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_populati
                     print(repr(rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl))).get_matrix()), file=store)
                     print('\n', file=store)
             print(file=store)
+        inicio = time.time()   
         rho_pop = apply_projection(rho_pop, n, cl, a, projection_method, pre_projection_unitary)
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "modulos.txt", "apply_projection")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -445,9 +479,11 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_populati
             print(file=store)
 
             # 4 - Crossover to fill
+        inicio = time.time()
         rho_pop = qm.rho(mat_clone.dot(rho_pop.get_matrix()).dot(np.transpose(mat_clone)), dense=True)
         rho_pop = qm.rho(mat_cross.dot(rho_pop.get_matrix()).dot(np.transpose(mat_cross)), dense=True)
-
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "modulos.txt", "crossover_to_fill")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -463,7 +499,10 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_populati
                     print(repr(rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl))).get_matrix()), file=store)
                     print('\n', file=store)
             print(file=store)
+        inicio = time.time()
         rho_pop = apply_mutation(rho_pop, n, cl, a, pm_sum, pm_norm, mutation_unitary,pm)
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "modulos.txt", "mutation")
 
     if store_path:
         store.close()
@@ -536,6 +575,7 @@ def qga_qf_test(fitness_states, samples, dirpath):
     for trial in range(samples):
         print("trial ", trial, end=' ')
         #t1 = time()
+        inicio = time.time()
 
         rho_population = qm.rho.gen_random_rho(n * cl)
 
@@ -546,7 +586,8 @@ def qga_qf_test(fitness_states, samples, dirpath):
                                                   store_path=None,
                                                   track_fidelity=tf)
         #print(time() - t1)
-
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "modulos.txt", "qga")
         with open(dirpath+'/fidelity_tracks_{:03d}'.format(trial), 'w') as file:
             file.write("Tracking fidelities for:\n")
             for i, state in enumerate(fitness_states):
@@ -563,7 +604,7 @@ if __name__ == '__main__':
     #state_case_number = 600
     state_case_number = 2
     #samples = 50
-    samples = 2
+    samples = 4
     run_num = 9
     dirpath = 'QGA_QF_run_{:02d}/QGA_BCQO_test_'.format(run_num)
 

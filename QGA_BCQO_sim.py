@@ -27,6 +27,14 @@ np.set_printoptions(threshold=np.inf)
 # -----------------------------
 
 
+def anotar_tiempos(inicio,fin,nombre_archivo,nombre_funcion):
+    ejecucion = fin - inicio
+    archivo = open(nombre_archivo,"a")
+    archivo.write("Tiempo de ejecucion de "+nombre_funcion+": "+str(ejecucion)+" \n ")
+    archivo.close()
+
+
+
 def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                               init_population=None, n=None, cl=None,
                               generation_number=100, pm=0.01, mutation_pattern=None, mutation_unitary="x",
@@ -119,6 +127,7 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
     """
 
     # 1 - Get the initial population
+    inicio = time.time()
     if init_population is None:
         # generate a random population
         raise ValueError('init_population is required in this version. Random population is not supported.')
@@ -143,7 +152,9 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
         a = n//2
         ancillas = [ia for ia in range(n*cl, n*cl+a)]
         rho_pop = qm.rho([1], [i * 2**a], [i * 2**a], (2**(n*cl + a), 2**(n*cl + a)))
-
+    fin = time.time()
+    #primer anotamiento
+    anotar_tiempos(inicio, fin, "original.txt", "init_pop")
     if track_fidelity:
         fidelity_array = np.zeros(shape=(generation_number, 5, n, len(track_fidelity)))
 
@@ -164,6 +175,7 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
         print(file=store)
 
     # Build de cloning routine unitary
+    inicio = time.time()
     clone = qm.Identity(2 ** (n * cl))
     for nu in range(0, n // 2):
         s = qm.Swap_reg(range((nu + 1) * cl, (nu + 2) * cl),
@@ -209,9 +221,11 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
     sort0, sort1 = sort_arr
     mat_sort0 = sort0
     mat_sort1 = sort1
-
+    #segundo anotamiento
+    fin = time.time()
+    anotar_tiempos(inicio, fin, "original.txt", "build_unitary_routines")
     # Build mutation arrays
-    
+    inicio = time.time()
     if type(mutation_unitary) == list or type(pm) == list:
         if type(mutation_unitary) != list or type(pm) != list:
             raise ValueError("mutation_unitary and pm are not consistent.")
@@ -228,7 +242,6 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
         pm_sum = pm
         use_mutation_unitary_set = False
     if use_mutation_unitary_set==False:
-        print("dentro : ",mutation_unitary)
         if mutation_unitary not in ["r", "R"]:
             if type(mutation_unitary) == str:
                 if mutation_unitary in ["x", "X", "not", "NOT"]:
@@ -249,7 +262,9 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                 mat_mut_arr.append(np.kron(np.kron(np.identity(2 ** i),
                                                    mutation_unitary.get_matrix()),
                                            np.identity(2 ** (n * cl - i - 1 + a))))
-
+    fin = time.time()
+    anotar_tiempos(inicio, fin, "original.txt", "build_mutation_arrays")
+    inicio = time.time()
     # Build the pre-projection rotation
     if type(pre_projection_unitary) == str:
         if pre_projection_unitary in ["i", "I"]:
@@ -263,7 +278,8 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
         lower_rot_mat = np.kron(lower_rot_mat, np.identity(2 ** a))
 
         lower_rot = None  # Not implemented
-
+    fin = time.time()
+    anotar_tiempos(inicio, fin, "original.txt", "preprojection_rotation")
     for generation in range(generation_number):
         if track_fidelity:
             for reg in range(n):
@@ -287,7 +303,9 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                     print('\n', file=store)
 
         # 2 - sort or semi sort:
+        inicio = time.time()
         for stage in range(0, n):
+            hasiera = time.time()
             sort = [sort0, sort1][stage % 2]
             mat_sort = [mat_sort0, mat_sort1][stage % 2]
             rho_pop = qm.rho(mat_sort.dot(rho_pop.get_matrix()).dot(np.transpose(mat_sort).conjugate()), dense=True)
@@ -301,6 +319,11 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                 rho_pop = qm.rho(np.kron(rho_pop.get_matrix(),
                                          qm.rho([1], [0], [0], (2 ** a, 2 ** a)).get_matrix()), dense=True)
 
+            amaiera = time.time()
+            anotar_tiempos(hasiera, amaiera, "original.txt", "apply_stage_transform_for_stage")
+        
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "original.txt", "preprojection_rotation_for_generation")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -318,6 +341,7 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
             print(file=store)
 
         # 3 - Clear the lowest half
+        inicio = time.time()
         if projection_method != 'ptrace':
             for q in range(n//2 * cl, n * cl):
                 rho_pop.projection_controlled_rotation(q, 1, qm.rho([1, 1], [0, 1], [1, 0], (2, 2)),
@@ -332,7 +356,9 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
             rho_pop = qm.rho(np.kron(rho_pop.get_matrix(),
                                      qm.rho([1], [0], [0],
                                             (2 ** (n*cl - n//2 * cl + a),
-                                             2 ** (n*cl - n//2 * cl + a))).get_matrix()), dense=True)
+                                            2 ** (n*cl - n//2 * cl + a))).get_matrix()), dense=True)
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "original.txt", "apply_projection")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -350,9 +376,11 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
             print(file=store)
 
         # 4 - Crossover to fill
+        inicio = time.time()
         rho_pop = qm.rho(mat_clone.dot(rho_pop.get_matrix()).dot(np.transpose(mat_clone)), dense=True)
         rho_pop = qm.rho(mat_cross.dot(rho_pop.get_matrix()).dot(np.transpose(mat_cross)), dense=True)
-
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "original.txt", "crossover_to_fill")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -370,6 +398,7 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
             print(file=store)
 
         # 5 - mutate with probability pm
+        inicio = time.time()
         for c in range(n * cl):
             r = np.random.random()
             if r < pm_sum:
@@ -378,7 +407,8 @@ def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,
                                   np.identity(2 ** (n * cl - c - 1 + a)))
                 rho_pop = qm.rho(mut_mat.dot(rho_pop.get_matrix().dot(np.transpose(mut_mat).conjugate())),
                                  dense=True)
-
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "original.txt", "mutation")
         if track_fidelity:
             for reg in range(n):
                 reg_state = rho_pop.partial_trace(list(range(reg * cl, (reg + 1) * cl)))
@@ -472,7 +502,7 @@ def qga_qf_test(fitness_states, samples, dirpath):
         #t1 = time()
 
         rho_population = qm.rho.gen_random_rho(n * cl)
-
+        inicio = time.time()
         rho_final, ft = quantum_genetic_algorithm(criteria, fitness_basis=uu,
                                                   init_population=rho_population, n=n, cl=cl,
                                                   generation_number=g, pm=pm, mutation_unitary=mu,
@@ -480,7 +510,8 @@ def qga_qf_test(fitness_states, samples, dirpath):
                                                   store_path=None,
                                                   track_fidelity=tf)
         #print(time() - t1)
-
+        fin = time.time()
+        anotar_tiempos(inicio, fin, "original.txt", "qga")
         with open(dirpath+'/fidelity_tracks_{:03d}'.format(trial), 'w') as file:
             file.write("Tracking fidelities for:\n")
             for i, state in enumerate(fitness_states):
@@ -497,7 +528,7 @@ if __name__ == '__main__':
     #state_case_number = 600
     state_case_number = 2
     #samples = 50
-    samples = 2
+    samples = 4
     run_num = 9
     dirpath = 'QGA_QF_run_{:02d}/QGA_BCQO_test_'.format(run_num)
 
@@ -517,7 +548,6 @@ if __name__ == '__main__':
             # DOES NOT GENERATE COMPLEX NUMBERS!!!
             ortho_group = special_ortho_group.rvs(4)
             tf = [ortho_group[:, i] for i in range(4)]
-
         qga_qf_test(fitness_states=tf, samples=samples, dirpath=dirpath+("%03d" % (state_case + 1)))
     end_time = time.time()
     execution_time = end_time - start_time
