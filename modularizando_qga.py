@@ -557,9 +557,9 @@ if __name__ == '__main__':
     eliminar_contenido("modulos.txt")
     comenzar = time.time()
     #state_case_number = 600
-    state_case_number = 2
+    state_case_number = 10
     #samples = 50
-    samples = 1
+    samples = 4
     run_num = 9
     dirpath = 'QGA_QF_run_{:02d}/QGA_BCQO_test_'.format(run_num)
 

@@ -526,12 +526,11 @@ def qga_qf_test(fitness_states, samples, dirpath):
 
 
 if __name__ == '__main__':
-    
     from scipy.stats import special_ortho_group
     eliminar_contenido("original.txt")
     comenzar = time.time()
     #state_case_number = 600
-    state_case_number = 2
+    state_case_number = 10
     #samples = 50
     samples = 4
     run_num = 9
@@ -541,14 +540,14 @@ if __name__ == '__main__':
         print("State case: %d" % state_case)
         if state_case == 0:
             tf = [np.array([1, 0, 0, 0]),
-                  np.array([0, 1, 0, 0]),
-                  np.array([0, 0, 1, 0]),
-                  np.array([0, 0, 0, 1])]
+                np.array([0, 1, 0, 0]),
+                np.array([0, 0, 1, 0]),
+                np.array([0, 0, 0, 1])]
         elif state_case == 1:
             tf = [np.full(4, 1 / 2),
-                  np.full(4, 1 / 2) * np.array([1, -1, 1, -1]),
-                  np.full(4, 1 / 2) * np.array([1, 1, -1, -1]),
-                  np.full(4, 1 / 2) * np.array([1, -1, -1, 1])]
+                np.full(4, 1 / 2) * np.array([1, -1, 1, -1]),
+                np.full(4, 1 / 2) * np.array([1, 1, -1, -1]),
+                np.full(4, 1 / 2) * np.array([1, -1, -1, 1])]
         else:
             # DOES NOT GENERATE COMPLEX NUMBERS!!!
             ortho_group = special_ortho_group.rvs(4)
@@ -556,4 +555,3 @@ if __name__ == '__main__':
         qga_qf_test(fitness_states=tf, samples=samples, dirpath=dirpath+("%03d" % (state_case + 1)))
     terminar = time.time()
     anotar_tiempos(comenzar,terminar,"original.txt","Ejecutame")
-    

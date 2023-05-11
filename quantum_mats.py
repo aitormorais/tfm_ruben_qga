@@ -397,11 +397,11 @@ class rho(QuantumMatrix):
 
     def get(self, i, j):
         """
-    Obtiene el elemento (i, j) de la matriz rho.
-    :param i: Índice de fila.
-    :param j: Índice de columna.
-    :return: El elemento (i, j) de la matriz rho.
-    """
+        Obtiene el elemento (i, j) de la matriz rho.
+        :param i: Índice de fila.
+        :param j: Índice de columna.
+        :return: El elemento (i, j) de la matriz rho.
+        """
         QuantumMatrix.get(self, i, j)
         if not self.dense:
             return self.store.get((i, j), 0)
@@ -522,6 +522,7 @@ class rho(QuantumMatrix):
                     new_rho.set(i, j, v * self.get(i, k))
                 else:
                     new_rho.set(i, j, new_rho.get(i, j) + v * self.get(i, k))
+        
         return new_rho
 
     def set_qubit(self, q, v, measure_it='random'):
