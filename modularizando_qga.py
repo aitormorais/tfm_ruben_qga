@@ -4,54 +4,17 @@ import quantum_mats as qm
 from copy import deepcopy
 import time
 import re
+import cProfile
+import pstats
+from functools import lru_cache
 
-
-def initialize_population(init_population, n, cl, track_fidelity, store_path,generation_number):
-    # Código que maneja la inicialización de la población y los errores relacionados
-    if init_population is None:
-        # generate a random population
-        raise ValueError('init_population is required in this version. Random population is not supported.')
-    elif type(init_population) == qm.rho:
-        if not n or not cl:
-            raise ValueError('If population is a quantum_matrix.rho object n and cl are required.')
-        a = n//2
-        ancillas = [ia for ia in range(n*cl, n*cl+a)]
-        ancillas_initial_state = np.zeros((2 ** a, 2 ** a))
-        ancillas_initial_state[0, 0] = 1
-        rho_pop = qm.rho(np.kron(init_population.get_matrix(), ancillas_initial_state), dense=True)
+def eliminar_contenido(archivo):
+    """Funcion que se asegura de que el archivo.txt donde escribiremos los tiempos este limpio"""
+    if os.path.exists(archivo):
+        print(f"El archivo {archivo} existe. Eliminando su contenido.")
+        open(archivo, "w").close()
     else:
-        population = deepcopy(init_population)
-        if n != len(population) or cl != len(population[0]):
-            raise ValueError('n and cl mismatch. {}!={} or {}!={}.'.format(n, len(population), cl, len(population[0])))
-        i = 0
-        index = 0
-        for p in population:
-            for c in p:
-                i += c * 2**(n*cl - index - 1)
-                index += 1
-        a = n//2
-        ancillas = [ia for ia in range(n*cl, n*cl+a)]
-        rho_pop = qm.rho([1], [i * 2**a], [i * 2**a], (2**(n*cl + a), 2**(n*cl + a)))
-
-    if track_fidelity:
-        fidelity_array = np.zeros(shape=(generation_number, 5, n, len(track_fidelity)))
-
-    if store_path:
-        store = open(store_path, 'w')
-        print('Genetic Algorithm parameters:', file=store)
-        print('generation_numbar = {:d}, pm = {:f}, population number = {:d}, chromosome length = {:d}'.format(
-            generation_number, pm, n, cl), file=store)
-        print('Tracked fidelity for states:', file=store)
-        if track_fidelity:
-            for state in track_fidelity:
-                if type(state) == qm.rho:
-                    print(state.get_matrix(), file=store)
-                else:
-                    print(repr(state), file=store)
-        else:
-            print("None", file=store)
-        print(file=store)
-    return rho_pop
+        print(f"El archivo {archivo} no existe.")
 
 def cloning_routine_unitary(n,cl,a):
     clone = qm.Identity(2 ** (n * cl))
@@ -99,6 +62,7 @@ def sor_semisort_unitary_og(n,cl,a, fitness_basis, fitness_criteria):
     mat_sort0 = sort0
     mat_sort1 = sort1
     return mat_sort0,mat_sort1
+
 def sort_semisort_unitary(n,cl,a, fitness_basis, fitness_criteria):
     sort_arr = [np.identity(2 ** (n * cl + a)), np.identity(2 ** (n * cl + a))]
     for stage in [0, 1]:
@@ -123,7 +87,6 @@ def sort_semisort_unitary(n,cl,a, fitness_basis, fitness_criteria):
     sort0, sort1 = sort_arr
     return sort0,sort1
 
-
 def validate_mutation_unitary(mutation_unitary):
     if re.match(r"^[rR]$", mutation_unitary):
         return True
@@ -145,7 +108,6 @@ def create_mutation_unitary(mutation_unitary):
     elif re.match(r"^[iI]$", mutation_unitary):
         return qm.Identity(2)
     raise ValueError("mutation_unitary = \"%s\" not recognised." % mutation_unitary)
-
 
 def build_unitary_routines(n, cl, fitness_basis, fitness_criteria,a):
     # Código para construir las rutinas unitarias
@@ -225,14 +187,6 @@ def build_pre_projection_rotation(pre_projection_unitary, n, cl,a):
     lower_rot = None  # Not implemented
     return lower_rot_mat
 
-def quantum_genetic_algorithm(init_population, n, cl, generation_number, pm, fitness_basis, fitness_criteria, mutation_unitary, pre_projection_unitary, store_path, track_fidelity):
-    rho_pop, fidelity_array, store = initialize_population(init_population, n, cl, track_fidelity, store_path)
-    mat_clone, mat_cross, sort0, sort1 = build_unitary_routines(n, cl, fitness_basis, fitness_criteria)
-    use_mutation_unitary_set, pm_sum, pm_norm, mut_arr, mat_mut_arr = build_mutation_arrays(mutation_unitary, pm, n, cl, mutation_pattern)
-    lower_rot_mat, lower_rot = build_pre_projection_rotation(pre_projection_unitary, n, cl)
-    
-    # Código para el bucle principal de generaciones y otras operaciones
-
 def init_rho_pop_from_array(init_population, n, cl):
     population = np.array(deepcopy(init_population))
     if n != len(population) or cl != len(population[0]):
@@ -271,7 +225,6 @@ def init_pop_numpy(init_population, n, cl,generation_number):
         rho_pop,ancillas,a = init_rho_pop_from_array(init_population, n, cl)
     return rho_pop,ancillas,a
 
-
 def apply_mutation(rho_pop, n, cl, a, pm_sum, pm_norm, mutation_unitary,pm):
     """
     Aplica una mutación a la población con una probabilidad dada.
@@ -294,6 +247,7 @@ def apply_mutation(rho_pop, n, cl, a, pm_sum, pm_norm, mutation_unitary,pm):
             rho_pop = qm.rho(mut_mat.dot(rho_pop.get_matrix().dot(np.transpose(mut_mat).conjugate())),
                              dense=True)
     return rho_pop
+
 def apply_projection(rho_pop, n, cl, a, projection_method, pre_projection_unitary):
     """
     Aplica la proyección deseada a la población.
@@ -323,9 +277,6 @@ def apply_projection(rho_pop, n, cl, a, projection_method, pre_projection_unitar
                                          2 ** (n * cl - n // 2 * cl + a))).get_matrix()), dense=True)
     return rho_pop
 
-# Ejemplo de uso:
-#rho_pop_projected = apply_projection(rho_pop, n, cl, a, projection_method, pre_projection_unitary)
-
 def apply_stage_transform(rho_pop, n, stage, sort0, sort1, mat_sort0, mat_sort1, ancillas, projection_method, pre_projection_unitary, a,cl):
     """
     Aplica la transformación de etapa a la población.
@@ -345,29 +296,33 @@ def apply_stage_transform(rho_pop, n, stage, sort0, sort1, mat_sort0, mat_sort1,
     """
     sort = [sort0, sort1][stage % 2]
     mat_sort = [mat_sort0, mat_sort1][stage % 2]
+    
     rho_pop = qm.rho(mat_sort.dot(rho_pop.get_matrix()).dot(np.transpose(mat_sort).conjugate()), dense=True)
 
     if projection_method != 'ptrace':
         for ai in ancillas:
             rho_pop.projection_controlled_rotation(ai, 1, qm.rho([1, 1], [0, 1], [1, 0], (2, 2)),
-                                                   pre_projection_unitary, projection_method)
+                                                pre_projection_unitary, projection_method)
     else:
-        rho_pop = rho_pop.partial_trace(list(range(n * cl)))
+        rho_pop = rho_pop.partial_trace(list(range(n * cl)))#intentar numpy con esto
         rho_pop = qm.rho(np.kron(rho_pop.get_matrix(),
-                                 qm.rho([1], [0], [0], (2 ** a, 2 ** a)).get_matrix()), dense=True)
-                                 # Ejemplo de uso:
+                                qm.rho([1], [0], [0], (2 ** a, 2 ** a)).get_matrix()), dense=True)
 
-   
+
+
+
     return rho_pop
-#for stage in range(0, n):
-#    rho_pop = apply_stage_transform(rho_pop, n, stage, sort0, sort1, mat_sort0, mat_sort1, ancillas, projection_method, pre_projection_unitary, a)
-
-
 
 def anotar_tiempos(inicio,fin,nombre_archivo,nombre_funcion):
+    """Anotar en un archivo.txt los tiempos de cada parte
+    :param inicio: momento en el que se inicio
+    :param fin: momento en el que finaliza
+    :param nombre_archivo: cadena de texto que representa el nombre del archivo donde se guarda la info
+    :param nombre_funcion : cadena de texto con el nombre del metodo que medimos
+    """
     ejecucion = fin - inicio
     archivo = open(nombre_archivo,"a")
-    archivo.write("Tiempo de ejecucion de "+nombre_funcion+": "+str(ejecucion)+" \n ")
+    archivo.write(nombre_funcion+": "+str(ejecucion)+" \n ")
     archivo.close()
 
 def quantum_genetic_algorithm(fitness_criteria, fitness_basis=None,init_population=None, n=None, cl=None,generation_number=100, pm=0.01, mutation_pattern=None, mutation_unitary="x",projection_method="r", pre_projection_unitary="I",store_path=None, track_fidelity=None, track_only_reg_states=True):
@@ -597,14 +552,14 @@ def qga_qf_test(fitness_states, samples, dirpath):
             file.write("\n")
             file.write(repr(ft))
 
-
 if __name__ == '__main__':
     from scipy.stats import special_ortho_group
-    start_time = time.time()
+    eliminar_contenido("modulos.txt")
+    comenzar = time.time()
     #state_case_number = 600
     state_case_number = 2
     #samples = 50
-    samples = 4
+    samples = 1
     run_num = 9
     dirpath = 'QGA_QF_run_{:02d}/QGA_BCQO_test_'.format(run_num)
 
@@ -612,14 +567,14 @@ if __name__ == '__main__':
         print("State case: %d" % state_case)
         if state_case == 0:
             tf = [np.array([1, 0, 0, 0]),
-                  np.array([0, 1, 0, 0]),
-                  np.array([0, 0, 1, 0]),
-                  np.array([0, 0, 0, 1])]
+                np.array([0, 1, 0, 0]),
+                np.array([0, 0, 1, 0]),
+                np.array([0, 0, 0, 1])]
         elif state_case == 1:
             tf = [np.full(4, 1 / 2),
-                  np.full(4, 1 / 2) * np.array([1, -1, 1, -1]),
-                  np.full(4, 1 / 2) * np.array([1, 1, -1, -1]),
-                  np.full(4, 1 / 2) * np.array([1, -1, -1, 1])]
+                np.full(4, 1 / 2) * np.array([1, -1, 1, -1]),
+                np.full(4, 1 / 2) * np.array([1, 1, -1, -1]),
+                np.full(4, 1 / 2) * np.array([1, -1, -1, 1])]
         else:
             # DOES NOT GENERATE COMPLEX NUMBERS!!!
             ortho_group = special_ortho_group.rvs(4)
@@ -628,5 +583,6 @@ if __name__ == '__main__':
         qga_qf_test(fitness_states=tf, samples=samples, dirpath=dirpath+("%03d" % (state_case + 1)))
     end_time = time.time()
     # Calcula e imprime el tiempo de ejecución
-    execution_time = end_time - start_time
-    print("Tiempo de ejecución: {:.5f} segundos".format(execution_time))
+    terminar = time.time()
+    anotar_tiempos(comenzar,terminar,"modulos.txt","Ejecutame")
+    #print("Tiempo de ejecución: {:.5f} segundos".format(execution_time))
